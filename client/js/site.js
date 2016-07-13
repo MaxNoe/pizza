@@ -110,83 +110,121 @@ var Order = React.createClass({
 
 var OrderForm = React.createClass({
   onSubmit: function(e) {
-    var author, description, price;
     e.preventDefault();
-    author = this.refs.author.getDOMNode().value;
-    description = this.refs.description.getDOMNode().value;
-    price = this.refs.price.getDOMNode().value;
-    $.post('/add', {
-      author: author,
-      description: description,
-      price: price
-    }, function(data) {
-      var div;
-      if (data.type === 'error') {
-        div = $('<div>', {
-          "class": 'alert alert-danger alert-dismissable'
-        });
-        div.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>');
-        div.append($('<strong>').text('Failure! '));
-        div.append(data.msg);
-        return $('#orders-panel').before(div);
+    var author = this.refs.author.getDOMNode().value;
+    var description = this.refs.description.getDOMNode().value;
+    var price = this.refs.price.getDOMNode().value;
+
+    $.post(
+      '/add',
+      {
+        author: author,
+        description: description,
+        price: price
+      },
+      function(data) {
+        var div;
+        if (data.type === 'error') {
+          div = $('<div>', {"class": 'alert alert-danger alert-dismissable'});
+          div.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>');
+          div.append($('<strong>').text('Failure! '));
+          div.append(data.msg);
+          return $('#orders-panel').before(div);
+        }
       }
-    });
+    );
     this.refs.author.getDOMNode().value = '';
     this.refs.description.getDOMNode().value = '';
     return this.refs.price.getDOMNode().value = '';
   },
   render: function() {
-    return React.createElement("div", {
-      "id": "order-form",
-      "className": "panel-footer"
-    }, React.createElement("form", {
-      "id": "addpizza",
-      "className": "form-inline",
-      "role": "form",
-      "onSubmit": this.onSubmit
-    }, React.createElement("div", {
-      "className": "form-group col-sm-4"
-    }, React.createElement("input", {
-      "type": "text",
-      "className": "form-control",
-      "ref": "description",
-      "placeholder": "Bestellung"
-    })), React.createElement("div", {
-      "className": "form-group col-sm-3"
-    }, React.createElement("input", {
-      "type": "text",
-      "className": "form-control",
-      "ref": "author",
-      "placeholder": "Name"
-    })), React.createElement("div", {
-      "className": "form-group col-sm-3"
-    }, React.createElement("div", {
-      "className": "input-group"
-    }, React.createElement("input", {
-      "type": "text",
-      "className": "form-control",
-      "ref": "price",
-      "placeholder": "Preis"
-    }), React.createElement("span", {
-      "className": "input-group-addon"
-    }, "€"))), React.createElement("div", {
-      "className": "form-group"
-    }, React.createElement("button", {
-      "type": "submit",
-      "className": "btn btn-primary"
-    }, "Bestellen"))));
+    return React.createElement(
+	    "div",
+      {
+        "id": "order-form",
+        "className": "panel-footer"
+      },
+      React.createElement(
+        "form",
+        {
+          "id": "addpizza",
+          "className": "form-inline",
+          "role": "form",
+          "onSubmit": this.onSubmit
+        },
+        React.createElement(
+          "div",
+          {
+            "className": "form-group col-sm-4"
+          },
+          React.createElement(
+            "input",
+            {
+              "type": "text",
+              "className": "form-control",
+              "ref": "description",
+              "placeholder": "Bestellung"
+            }
+          )
+        ),
+        React.createElement(
+          "div",
+          {"className": "form-group col-sm-3"},
+          React.createElement(
+            "input",
+            {
+              "type": "text",
+              "className": "form-control",
+              "ref": "author",
+              "placeholder": "Name"
+            }
+          )
+        ),
+        React.createElement(
+          "div",
+          {"className": "form-group col-sm-3"},
+          React.createElement(
+            "div",
+            {"className": "input-group"},
+            React.createElement(
+              "input",
+              {
+                "type": "text",
+                "className": "form-control",
+                "ref": "price",
+                "placeholder": "Preis"
+              }
+            ),
+            React.createElement("span", {"className": "input-group-addon"}, "€")
+          )
+        ),
+        React.createElement(
+          "div",
+          { "className": "form-group" },
+          React.createElement(
+            "button",
+            {"type": "submit", "className": "btn btn-primary"},
+            "Bestellen"
+          )
+        )
+      )
+    );
   }
 });
 
 var OrdersPanel = React.createClass({
   render: function() {
-    return React.createElement("div", {
-      "className": "panel panel-default"
-    }, React.createElement("div", {
-      "className": "panel-heading"
-    }, React.createElement("h3", {
-      "className": "panel-title"
-    }, "Bestellungen")), React.createElement(Orders, null), React.createElement(OrderForm, null));
+    return React.createElement(
+      "div",
+      {"className": "panel panel-default"},
+      React.createElement(
+        "div",
+        {"className": "panel-heading"},
+        React.createElement("h3", { "className": "panel-title" }, "Bestellungen")
+      ),
+      React.createElement(Orders, null),
+      React.createElement(OrderForm, null)
+    );
   }
 });
 
@@ -196,28 +234,71 @@ var AdminPanel = React.createClass({
   deleteAll() {
     return events.emit('deleteAll');
   },
+  printOrders(event) {
+    var name = this.refs.name.getDOMNode().value;
+    var phone = this.refs.phone.getDOMNode().value;
+    if (!name || !phone) {
+      div = $('<div>', {"class": 'alert alert-danger alert-dismissable'});
+      div.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>');
+      div.append($('<strong>').text('Failure! '));
+      div.append("You need to provide your name and phone number");
+      return $('#orders-panel').before(div);
+    } else {
+      window.location = "order.pdf?" + $.param({name: name, phone: phone});
+    }
+  },
   render: function() {
-    return React.createElement("div", {
-      "className": "col-sm-5"
-    }, React.createElement("div", {
-      "className": "panel panel-default"
-    }, React.createElement("div", {
-      "className": "panel-heading"
-    }, React.createElement("h3", {
-      "className": "panel-title"
-    }, "Admin")), React.createElement("ul", {
-      "className": "list-group"
-    }, React.createElement("li", {
-      "className": "list-group-item"
-    }, React.createElement("a", {
-      "href": "/order.pdf",
-      "className": "btn btn-primary"
-    }, "Bestellung herunterladen")), React.createElement("li", {
-      "className": "list-group-item"
-    }, React.createElement("a", {
-      "onClick": this.deleteAll,
-      "className": "btn btn-primary"
-    }, "Bestellungen löschen")))));
+    return React.createElement(
+      "div", { "className": "col-sm-8" },
+      React.createElement(
+        "div", {"className": "panel panel-default"},
+        React.createElement(
+          "div", {"className": "panel-heading"},
+          React.createElement(
+            "h3", {"className": "panel-title"},
+            "Admin"
+          )
+        ),
+        React.createElement(
+          "div", {"className": "panel-body"},
+          React.createElement(
+            "div", {"className": "row"},
+            React.createElement(
+              "div", {"className": "col-sm-6"},
+              React.createElement(
+                "input",
+                {
+                  "type": "text",
+                  "className": "form-control",
+                  "ref": "name",
+                  "placeholder": "Name"
+                }
+              ),
+              React.createElement(
+                "input",
+                {
+                  "type": "text",
+                  "className": "form-control",
+                  "ref": "phone",
+                  "placeholder": "Telefonnummer"
+                }
+              ),
+              React.createElement(
+                "a", {"onClick": this.printOrders, "className": "btn btn-primary"},
+                "Bestellung herunterladen"
+              )
+            ),
+            React.createElement(
+              "div", {className: "col-sm-6"},
+              React.createElement(
+                "a", {"onClick": this.deleteAll, "className": "btn btn-primary"},
+                "Bestellungen löschen"
+              )
+            )
+          )
+        )
+      )
+    );
   }
 });
 

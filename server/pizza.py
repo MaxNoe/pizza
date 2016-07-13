@@ -1,6 +1,6 @@
 import sqlite3
 from flask import Flask, request, g, jsonify, send_file
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO
 from contextlib import closing
 from genorder import print_order
 
@@ -12,7 +12,7 @@ from collections import namedtuple
 Order = namedtuple('Order', ['description', 'price'])
 
 DATABASE = './pizza.sqlite3'
-DEBUG = True
+DEBUG = False
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
@@ -23,7 +23,8 @@ app.config.from_envvar('PIZZA_SETTINGS', silent=True)
 
 socketio = SocketIO(app)
 
-host, port = '0.0.0.0', 5000
+host = '0.0.0.0'
+port = 5000
 
 
 def cents_to_euros(cents):
@@ -142,5 +143,5 @@ def get_order():
 
 
 if __name__ == '__main__':
-    socketio.run(app)
+    socketio.run(app, host=host, port=port)
     # app.run(host, port)

@@ -1,5 +1,6 @@
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 var update = React.addons.update;
+var events = new Events();
 
 var socket = io();
 
@@ -12,7 +13,7 @@ var Orders = React.createClass({
   componentDidMount() {
     $.getJSON('/get/entries', this._updateOrders)
     socket.on('update', this._update);
-    socket.on('deleteAll', this._deletAll);
+    events.on('deleteAll', this._deletAll);
   },
 
   _updateOrders(orders) {
@@ -193,8 +194,7 @@ React.render(React.createElement(OrdersPanel, null), document.getElementById('or
 
 var AdminPanel = React.createClass({
   deleteAll() {
-    console.log("deleteAll");
-    return socket.emit('deleteAll');
+    return events.emit('deleteAll');
   },
   render: function() {
     return React.createElement("div", {

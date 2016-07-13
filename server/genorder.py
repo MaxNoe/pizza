@@ -1,4 +1,4 @@
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 '''
     Pizzaboy
     Automated generation of pizza orders.
@@ -10,6 +10,9 @@
 
 from __future__ import print_function
 import jinja2
+import markdown
+from weasyprint import HTML
+import codecs
 
 from datetime import datetime
 
@@ -18,34 +21,15 @@ def cents_to_euros(cents):
     return u'{},{:02d} €'.format(int(cents / 100), cents % 100)
 
 
-def escape_latex(pizzas):
-    return pizzas  # pizzas.replace('\\', '\\\\').replace('%', '\\%').replace('&', '\\&')
+def print_order(orders, name, phone):
+    with codecs.open('template.md', encoding='utf-8') as f:
+        template = jinja2.Template(f.read())
 
+    md = template.render(name=name, phone=phone, orders=orders)
+    html = markdown.markdown(md, extensions=['markdown.extensions.tables'])
+    document = HTML(string=html)
 
-def sanitize_tex(text):
-    return text.replace('\\', '').replace('{', '\\{').replace('}', '\\}')
+    filename = 'pizza-{}.pdf'.format(datetime.now().strftime('%Y-%m-%d'))
+    document.write_pdf(filename)
 
-
-def print_order(pizzas, prices):
-    coststring = u'Preis: {}'.format(
-        cents_to_euros(sum(prices)),
-        cents_to_euros(int(round(0.9 * sum(prices))))
-    )
-
-    pizzas = map(sanitize_tex, pizzas)
-    pizzas = '\\item ' + escape_latex(' \\ \n \\item '.join(pizzas))
-    identifier = 'pizza-{}'.format(datetime.now().strftime('%Y-%m-%d'))
-    filename = '/tmp/{}.tex'.format(identifier)
-
-    with open(filename, 'w') as texfile:
-        texfile.write(
-            TEMPLATE.decode('utf-8')
-            .replace(u'%PIZZA', pizzas)
-            .replace(u'%PRICE', coststring)
-            .encode('utf-8')
-        )
-
-    return '{}.pdf'.format(identifier)
-
-with open('template.md', 'r') as f:
-    TEMPLATE = f.read()
+    return filename

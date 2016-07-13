@@ -14,6 +14,12 @@ import logging
 import re
 import json
 
+from collections import namedtuple
+
+Order = namedtuple('Order', ['description', 'price'])
+
+QUEUES = []
+
 logging.basicConfig()
 
 DATABASE = './pizza.sqlite3'
@@ -126,15 +132,17 @@ def add_entry():
 
 def update_clients():
     entries = get_entries()
-    for q in queues:
+    for q in QUEUES:
         q.put(('update', entries))
 
 
 @app.route('/order.pdf', methods=['GET'])
 def get_order():
+    name = request.args.get('name', 'Hans')
+    phone = request.args.get('phone', '1234')
     csr = g.db.execute('SELECT description, price FROM entries ORDER BY id ASC')
-    pizzas, prices = zip(*csr.fetchall())
-    fname = print_order(pizzas, prices)
+    orders = [Order(description, price) for description, price in csr.fetchall()]
+    fname = print_order(orders, name, phone)
     return send_file(fname)
 
 
@@ -145,22 +153,20 @@ def wsgi_app(environ, start_response):
     else:
         return app(environ, start_response)
 
-queues = []
-
 
 def handle_websocket(ws):
     q = gevent.queue.Queue()
-    queues.append(q)
+    QUEUES.append(q)
     while True:
-        type, data = q.get()
-        ws.send(json.dumps({'type': type, 'data': data}))
+        type_, data = q.get()
+        ws.send(json.dumps({'type': type_, 'data': data}))
 
 
-# @werkzeug.serving.run_with_reloader
 def run_server():
     http_server = WSGIServer((host, port), wsgi_app, handler_class=WebSocketHandler)
     print('Server started at {}:{}'.format(host, port))
     http_server.serve_forever()
+
 
 if __name__ == '__main__':
     run_server()

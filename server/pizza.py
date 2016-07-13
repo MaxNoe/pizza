@@ -1,16 +1,9 @@
-# encoding: UTF-8
-
 import sqlite3
 from flask import Flask, request, g, jsonify, send_file
+from flask_socketio import SocketIO, send
 from contextlib import closing
-
-from gevent.pywsgi import WSGIServer
-from geventwebsocket.handler import WebSocketHandler
-import gevent.queue
-
 from genorder import print_order
 
-import logging
 import re
 import json
 
@@ -18,21 +11,17 @@ from collections import namedtuple
 
 Order = namedtuple('Order', ['description', 'price'])
 
-QUEUES = []
-
-logging.basicConfig()
-
 DATABASE = './pizza.sqlite3'
-DEBUG = False
+DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
 PASSWORD = 'default'
 
 app = Flask(__name__, static_url_path='', static_folder='../client')
 app.config.from_object(__name__)
-app.add_url_rule('/', 'root', lambda: app.send_static_file('index.html'))
-
 app.config.from_envvar('PIZZA_SETTINGS', silent=True)
+
+socketio = SocketIO(app)
 
 host, port = '0.0.0.0', 5000
 
@@ -50,6 +39,11 @@ def init_db():
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
+
+
+@app.route('/')
+def root():
+    return app.send_static_file('index.html')
 
 
 @app.before_request
@@ -77,8 +71,10 @@ def get_entries():
         dict(pid=row[0], description=row[1], author=row[2], price=row[3], paid=row[4])
         for row in cur.fetchall()
     ]
+
     for e in entries:
         e['price'] = cents_to_euros(e['price'])
+
     return json.dumps(entries)
 
 
@@ -132,8 +128,7 @@ def add_entry():
 
 def update_clients():
     entries = get_entries()
-    for q in QUEUES:
-        q.put(('update', entries))
+    socketio.emit('update', entries)
 
 
 @app.route('/order.pdf', methods=['GET'])
@@ -146,27 +141,6 @@ def get_order():
     return send_file(fname)
 
 
-def wsgi_app(environ, start_response):
-    path = environ["PATH_INFO"]
-    if path == "/websocket":
-        handle_websocket(environ["wsgi.websocket"])
-    else:
-        return app(environ, start_response)
-
-
-def handle_websocket(ws):
-    q = gevent.queue.Queue()
-    QUEUES.append(q)
-    while True:
-        type_, data = q.get()
-        ws.send(json.dumps({'type': type_, 'data': data}))
-
-
-def run_server():
-    http_server = WSGIServer((host, port), wsgi_app, handler_class=WebSocketHandler)
-    print('Server started at {}:{}'.format(host, port))
-    http_server.serve_forever()
-
-
 if __name__ == '__main__':
-    run_server()
+    socketio.run(app)
+    # app.run(host, port)

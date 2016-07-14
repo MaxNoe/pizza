@@ -6,7 +6,8 @@
     }
 }
 body {
-  text-align: justify
+  text-align: justify;
+  font-family: 'Fira Sans', sans-serif;
 }
 
 table {

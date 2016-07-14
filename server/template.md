@@ -8,7 +8,7 @@ Lieferung bitte erst ab 18:00 Uhr.
 
 | Bestellung | Preis |
 |---|---:|
-{% for order in orders %}|{{ order.description }}|{{ order.price }}|
+{% for order in orders %}|{{ order.description }}|{{ order.price| cents2euros }}|
 {% endfor %}
 
 ### Lieferadresse: 

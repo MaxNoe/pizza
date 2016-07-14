@@ -144,8 +144,8 @@ def get_order():
     phone = request.args.get('phone', '1234')
     csr = g.db.execute('SELECT description, price FROM entries ORDER BY id ASC')
     orders = [Order(description, price) for description, price in csr.fetchall()]
-    fname = print_order(orders, name, phone)
-    return send_file(fname)
+    tmp = print_order(orders, name, phone)
+    return send_file(tmp.name)
 
 
 if __name__ == '__main__':

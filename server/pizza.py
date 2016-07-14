@@ -13,10 +13,13 @@ from collections import namedtuple
 
 host = '0.0.0.0'
 port = 5000
+basepath = os.environ.get('PIZZA_BASEPATH')
 
 Order = namedtuple('Order', ['description', 'price'])
 
 bp = Blueprint('pizza', __name__, static_url_path='', static_folder='../client')
+socket_address = 'socket.io' if not basepath else basepath.strip('/') + '/socket.io'
+print(socket_address)
 
 
 def cents_to_euros(cents):
@@ -141,14 +144,14 @@ def get_order():
 
 app = Flask(
     __name__,
-    static_url_path=os.environ.get('PIZZA_BASEPATH'),
+    static_url_path=basepath,
     static_folder='../client',
     template_folder='../client',
 )
-socketio = SocketIO(app)
+socketio = SocketIO(app)  # , resource=socket_address)
 app.register_blueprint(
     bp,
-    url_prefix=os.environ.get('PIZZA_BASEPATH'),
+    url_prefix=basepath,
 )
 app.config['DATABASE'] = os.environ.get('PIZZA_DB', './pizza.sqlite3')
 app.config['DEBUG'] = os.environ.get('PIZZA_DEBUG') == 'True'

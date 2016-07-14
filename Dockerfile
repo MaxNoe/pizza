@@ -20,5 +20,4 @@ ADD server /server
 
 WORKDIR /server
 
-RUN python init.py
 CMD python pizza.py

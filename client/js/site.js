@@ -14,6 +14,8 @@ var formatTimestamp = function(timestamp) {
   return day + '.' + month + '. ' + hours + ':' + minutes.substr(-2);
 }
 
+var root = window.location.pathname;
+
 var Orders = React.createClass({
 
   getInitialState: function() {
@@ -21,7 +23,7 @@ var Orders = React.createClass({
   },
 
   componentDidMount() {
-    $.getJSON('/get/entries', this._updateOrders)
+    $.getJSON(root + 'get/entries', this._updateOrders)
     socket.on('update', this._update);
     events.on('deleteAll', this._deletAll);
   },
@@ -32,7 +34,7 @@ var Orders = React.createClass({
 
   _deletAll() {
     return this.state.orders.map(function(order) {
-      return $.post("/edit/" + order.pid + "/delete");
+      return $.post(root + "edit/" + order.pid + "/delete");
     });
   },
 
@@ -49,13 +51,13 @@ var Orders = React.createClass({
     this.setState({
       orders: orders
     });
-    return $.post("/edit/" + id + "/toggle_paid");
+    return $.post(root + "edit/" + id + "/toggle_paid");
   },
 
   deleteOrder(i) {
     var id, neworders;
     id = this.state.orders[i].pid;
-    $.post("/edit/" + id + "/delete");
+    $.post(root + "edit/" + id + "/delete");
     neworders = update(this.state.orders, {
       $splice: [[i, 1]]
     });
@@ -73,7 +75,6 @@ var Orders = React.createClass({
     } else {
       orderList = this.state.orders.map((function(_this) {
         return function(order, i) {
-          console.log(order);
           return React.createElement(Order, {
             "description": order.description,
             "price": order.price,
@@ -104,8 +105,6 @@ var Order = React.createClass({
   render: function() {
     var paidClass;
     paidClass = this.props.paid ? "active btn-success" : "";
-    console.log(this.props.timestamp);
-    console.log(formatTimestamp(this.props.timestamp));
     return React.createElement(
       "li", {"className": "list-group-item"},
       React.createElement(
@@ -129,9 +128,6 @@ var Order = React.createClass({
           {"onClick": this.props.deleteOrder, "className": "btn btn-default btn-xs"},
           "löschen"
         )
-      // ),
-      // React.createElement(
-      //   "span", { "className": "badge pull-right"}, this.props.timestamp
       )
     );
   }
@@ -145,7 +141,7 @@ var OrderForm = React.createClass({
     var price = this.refs.price.getDOMNode().value;
 
     $.post(
-      '/add',
+      root + 'add',
       {
         author: author,
         description: description,

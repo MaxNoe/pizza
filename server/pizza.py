@@ -1,5 +1,5 @@
 import sqlite3
-from flask import Flask, request, g, jsonify, send_file
+from flask import Flask, request, g, jsonify, send_file, Blueprint
 from flask_socketio import SocketIO
 from contextlib import closing
 from genorder import print_order
@@ -11,17 +11,12 @@ import json
 
 from collections import namedtuple
 
-Order = namedtuple('Order', ['description', 'price'])
-
-app = Flask(__name__, static_url_path='', static_folder='../client')
-
-app.config['DATABASE'] = os.environ.get('PIZZA_DB', './pizza.sqlite3')
-app.config['DEBUG'] = os.environ.get('PIZZA_DEBUG') == 'True'
-
-socketio = SocketIO(app)
-
 host = '0.0.0.0'
 port = 5000
+
+Order = namedtuple('Order', ['description', 'price'])
+
+bp = Blueprint('pizza', __name__, static_url_path='', static_folder='../client')
 
 
 def cents_to_euros(cents):
@@ -39,24 +34,24 @@ def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
 
 
-@app.route('/')
+@bp.route('/')
 def root():
     return app.send_static_file('index.html')
 
 
-@app.before_request
+@bp.before_request
 def before_request():
     g.db = connect_db()
 
 
-@app.teardown_request
+@bp.teardown_request
 def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
 
 
-@app.route('/get/entries')
+@bp.route('/get/entries')
 def get_entries():
     cur = g.db.execute(
         '''
@@ -80,7 +75,7 @@ def get_entries():
     return json.dumps(entries)
 
 
-@app.route('/edit/<int:pid>/<action>', methods=['POST'])
+@bp.route('/edit/<int:pid>/<action>', methods=['POST'])
 def edit_entry(pid, action):
     if action == 'toggle_paid':
         cur = g.db.execute('SELECT paid from entries WHERE id=?', [pid])
@@ -93,7 +88,7 @@ def edit_entry(pid, action):
     return json.dumps({'status': 'success'})
 
 
-@app.route('/add', methods=['POST'])
+@bp.route('/add', methods=['POST'])
 def add_entry():
     data = request.form.to_dict()
     description = data['description']
@@ -134,7 +129,7 @@ def update_clients():
     socketio.emit('update', entries)
 
 
-@app.route('/order.pdf', methods=['GET'])
+@bp.route('/order.pdf', methods=['GET'])
 def get_order():
     name = request.args.get('name', 'Hans')
     phone = request.args.get('phone', '1234')
@@ -142,6 +137,20 @@ def get_order():
     orders = [Order(description, price) for description, price in csr.fetchall()]
     tmp = print_order(orders, name, phone)
     return send_file(tmp.name)
+
+
+app = Flask(
+    __name__,
+    static_url_path='',
+    static_folder='../client'
+)
+socketio = SocketIO(app)
+app.register_blueprint(
+    bp,
+    url_prefix=os.environ.get('PIZZA_BASEPATH'),
+)
+app.config['DATABASE'] = os.environ.get('PIZZA_DB', './pizza.sqlite3')
+app.config['DEBUG'] = os.environ.get('PIZZA_DEBUG') == 'True'
 
 
 if __name__ == '__main__':

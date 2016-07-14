@@ -4,6 +4,16 @@ var events = new Events();
 
 var socket = io();
 
+
+var formatTimestamp = function(timestamp) {
+  var date = new Date(timestamp * 1000);
+  var hours = date.getHours();
+  var minutes = "0" + date.getMinutes();
+  var day = date.getDate();
+  var month = date.getMonth() + 1;
+  return day + '.' + month + '. ' + hours + ':' + minutes.substr(-2);
+}
+
 var Orders = React.createClass({
 
   getInitialState: function() {
@@ -63,11 +73,13 @@ var Orders = React.createClass({
     } else {
       orderList = this.state.orders.map((function(_this) {
         return function(order, i) {
+          console.log(order);
           return React.createElement(Order, {
             "description": order.description,
             "price": order.price,
             "author": order.author,
             "paid": order.paid,
+            "timestamp": order.timestamp,
             "togglePaid": _this.togglePaid.bind(_this, i),
             "deleteOrder": _this.deleteOrder.bind(_this, i),
             "key": order.pid
@@ -92,19 +104,36 @@ var Order = React.createClass({
   render: function() {
     var paidClass;
     paidClass = this.props.paid ? "active btn-success" : "";
-    return React.createElement("li", {
-      "className": "list-group-item"
-    }, React.createElement("span", {
-      "className": "badge pull-left"
-    }, this.props.price), this.props.description + ' (' + this.props.author + ')', React.createElement("div", {
-      "className": "btn-group pull-right"
-    }, React.createElement("button", {
-      "onClick": this.props.togglePaid,
-      "className": "btn btn-default btn-xs " + paidClass
-    }, "bezahlt"), React.createElement("button", {
-      "onClick": this.props.deleteOrder,
-      "className": "btn btn-default btn-xs"
-    }, "löschen")));
+    console.log(this.props.timestamp);
+    console.log(formatTimestamp(this.props.timestamp));
+    return React.createElement(
+      "li", {"className": "list-group-item"},
+      React.createElement(
+        "span",
+        { "className": "badge pull-left"},
+        this.props.price
+      ),
+      this.props.description + ' (' + this.props.author + ', ' + formatTimestamp(this.props.timestamp) + ')',
+      React.createElement(
+        "div", {"className": "btn-group pull-right"},
+        React.createElement(
+          "button",
+          {
+            "onClick": this.props.togglePaid,
+            "className": "btn btn-default btn-xs " + paidClass
+          },
+          "bezahlt"
+        ),
+        React.createElement(
+          "button",
+          {"onClick": this.props.deleteOrder, "className": "btn btn-default btn-xs"},
+          "löschen"
+        )
+      // ),
+      // React.createElement(
+      //   "span", { "className": "badge pull-right"}, this.props.timestamp
+      )
+    );
   }
 });
 
@@ -139,7 +168,7 @@ var OrderForm = React.createClass({
   },
   render: function() {
     return React.createElement(
-	    "div",
+      "div",
       {
         "id": "order-form",
         "className": "panel-footer"

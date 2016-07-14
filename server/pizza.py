@@ -3,6 +3,7 @@ from flask import Flask, request, g, jsonify, send_file
 from flask_socketio import SocketIO
 from contextlib import closing
 from genorder import print_order
+from datetime import datetime
 
 import re
 import json
@@ -63,13 +64,17 @@ def teardown_request(exception):
 def get_entries():
     cur = g.db.execute(
         '''
-        SELECT id, description, author, price, paid
+        SELECT id, description, author, price, paid, timestamp
         FROM entries
         ORDER BY id ASC
         '''
     )
     entries = [
-        dict(pid=row[0], description=row[1], author=row[2], price=row[3], paid=row[4])
+        dict(
+            pid=row[0], description=row[1], author=row[2],
+            price=row[3], paid=row[4],
+            timestamp=row[5],
+        )
         for row in cur.fetchall()
     ]
 
@@ -98,6 +103,7 @@ def add_entry():
     description = data['description']
     author = data['author']
     price = re.findall('(\d+)(?:[,.](\d))?\s*(?:€|E)?', data['price'])
+    timestamp = int(datetime.utcnow().timestamp())
 
     if not description:
         return jsonify(msg='Please provide a description', type='error')
@@ -116,10 +122,10 @@ def add_entry():
         g.db.execute(
             '''
             INSERT INTO entries
-            (description, author, price, paid)
-            VALUES (?, ?, ?, ?)
+            (description, author, price, paid, timestamp)
+            VALUES (?, ?, ?, ?, ?)
             ''',
-            [description, author, price, False]
+            [description, author, price, False, timestamp]
         )
         g.db.commit()
         update_clients()

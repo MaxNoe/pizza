@@ -1,8 +1,9 @@
-drop table if exists entries;
-create table entries (
-  id integer primary key autoincrement,
-  description text not null,
-  author text not null,
-  price int not null,
-  paid bool not null
+DROP TABLE IF EXISTS entries;
+CREATE TABLE entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  description TEXT NOT NULL,
+  author TEXT NOT NULL,
+  price INTEGER NOT NULL,
+  paid BOOL NOT NULL,
+  timestamp INTEGER NOT NULL
 );

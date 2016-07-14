@@ -1,5 +1,5 @@
 import sqlite3
-from flask import Flask, request, g, jsonify, send_file, Blueprint
+from flask import Flask, request, g, jsonify, send_file, Blueprint, render_template
 from flask_socketio import SocketIO
 from contextlib import closing
 from genorder import print_order
@@ -36,7 +36,7 @@ def connect_db():
 
 @bp.route('/')
 def root():
-    return app.send_static_file('index.html')
+    return render_template('index.html')
 
 
 @bp.before_request
@@ -141,8 +141,9 @@ def get_order():
 
 app = Flask(
     __name__,
-    static_url_path='',
-    static_folder='../client'
+    static_url_path=os.environ.get('PIZZA_BASEPATH'),
+    static_folder='../client',
+    template_folder='../client',
 )
 socketio = SocketIO(app)
 app.register_blueprint(
@@ -157,4 +158,3 @@ if __name__ == '__main__':
     if not os.path.isfile(app.config['DATABASE']):
         init_db()
     socketio.run(app, host=host, port=port)
-    # app.run(host, port)

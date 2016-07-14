@@ -4,6 +4,7 @@ from flask_socketio import SocketIO
 from contextlib import closing
 from genorder import print_order
 from datetime import datetime
+import os
 
 import re
 import json
@@ -12,15 +13,10 @@ from collections import namedtuple
 
 Order = namedtuple('Order', ['description', 'price'])
 
-DATABASE = './pizza.sqlite3'
-DEBUG = False
-SECRET_KEY = 'development key'
-USERNAME = 'admin'
-PASSWORD = 'default'
-
 app = Flask(__name__, static_url_path='', static_folder='../client')
-app.config.from_object(__name__)
-app.config.from_envvar('PIZZA_SETTINGS', silent=True)
+
+app.config['DATABASE'] = os.environ.get('PIZZA_DB', './pizza.sqlite3')
+app.config['DEBUG'] = os.environ.get('PIZZA_DEBUG') == 'True'
 
 socketio = SocketIO(app)
 
@@ -149,5 +145,7 @@ def get_order():
 
 
 if __name__ == '__main__':
+    if not os.path.isfile(app.config['DATABASE']):
+        init_db()
     socketio.run(app, host=host, port=port)
     # app.run(host, port)

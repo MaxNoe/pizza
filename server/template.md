@@ -11,6 +11,8 @@ Lieferung bitte erst ab 18:00 Uhr.
 {% for order in orders %}|{{ order.description }}|{{ order.price| cents2euros }}|
 {% endfor %}
 
+Summe: {{ total | cents2euros }}
+
 ### Lieferadresse: 
 
 {{ name }}  

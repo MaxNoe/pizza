@@ -1,6 +1,6 @@
 import jinja2
 import markdown
-from weasyprint import HTML
+from weasyprint import HTML, CSS
 import tempfile
 
 
@@ -15,11 +15,12 @@ env.filters['cents2euros'] = cents2euros
 def print_order(orders, name, phone):
     template = env.get_template('template.md')
 
-    md = template.render(name=name, phone=phone, orders=orders)
+    total = sum(order.price for order in orders)
+    md = template.render(name=name, phone=phone, orders=orders, total=total)
     html = markdown.markdown(md, extensions=['markdown.extensions.tables'])
     document = HTML(string=html)
 
     tmp = tempfile.NamedTemporaryFile(mode='wb', suffix='.pdf')
-    document.write_pdf(tmp)
+    document.write_pdf(tmp, stylesheets=[CSS(filename='order-style.css')])
 
     return tmp

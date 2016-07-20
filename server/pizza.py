@@ -148,7 +148,7 @@ app = Flask(
     static_folder='../client',
     template_folder='../client',
 )
-socketio = SocketIO(app)  # , resource=socket_address)
+socketio = SocketIO(app, resource=socket_address)
 app.register_blueprint(
     bp,
     url_prefix=basepath,

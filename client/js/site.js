@@ -2,7 +2,6 @@ var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 var update = React.addons.update;
 var events = new Events();
 
-var socket = io();
 
 
 var formatTimestamp = function(timestamp) {
@@ -15,6 +14,12 @@ var formatTimestamp = function(timestamp) {
 }
 
 var root = window.location.pathname;
+console.log(root);
+if (root != '/'){
+  var socket = io({path: root + 'socket.io'});
+} else {
+  var socket = io();
+}
 
 var Orders = React.createClass({
 

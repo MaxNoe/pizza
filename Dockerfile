@@ -10,7 +10,7 @@ ENV LC_ALL="en_US.UTF-8"
 ENV LANG="en_US.UTF-8"
 
 RUN conda install -y flask markdown jinja2 lxml cffi html5lib cairo pango \
-    && pip install weasyprint flask-socketio eventlet
+    && pip install weasyprint flask-socketio eventlet peewee
 
 ADD http://dl.1001fonts.com/fira-sans.zip /usr/share/fonts/truetype/
 RUN cd /usr/share/fonts/truetype && unzip fira-sans.zip && fc-cache

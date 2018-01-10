@@ -1,7 +1,5 @@
-import sqlite3
-from flask import Flask, request, g, jsonify, send_file, Blueprint, render_template
+from flask import Flask, request, jsonify, send_file, Blueprint, render_template
 from flask_socketio import SocketIO
-from contextlib import closing
 from genorder import print_order
 from datetime import datetime
 import os
@@ -9,84 +7,62 @@ import os
 import re
 import json
 
-from collections import namedtuple
+from database import database, Order, PizzaPlace, create_tables
 
 host = '0.0.0.0'
 port = 5000
 basepath = os.environ.get('PIZZA_BASEPATH')
 
-Order = namedtuple('Order', ['description', 'price'])
+# Order = namedtuple('Order', ['description', 'price'])
 
 bp = Blueprint('pizza', __name__, static_url_path='', static_folder='../client')
 socket_address = 'socket.io' if not basepath else basepath.strip('/') + '/socket.io'
-print(socket_address)
 
 
 def cents_to_euros(cents):
     return '{},{:02d} €'.format(int(cents / 100), cents % 100)
 
 
-def init_db():
-    with closing(connect_db()) as db:
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-
-def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
-
-
 @bp.route('/')
 def root():
-    return render_template('index.html')
+    place = PizzaPlace.select().where(PizzaPlace.active).get()
+    return render_template('index.html', name=place.name, url=place.url)
+
+
+@bp.before_app_first_request
+def before_first_request():
+    database.init(app.config['DATABASE'])
+    if not os.path.isfile(app.config['DATABASE']):
+        create_tables()
 
 
 @bp.before_request
 def before_request():
-    g.db = connect_db()
+    database.connect()
 
 
 @bp.teardown_request
 def teardown_request(exception):
-    db = getattr(g, 'db', None)
-    if db is not None:
-        db.close()
+    database.close()
 
 
 @bp.route('/get/entries')
 def get_entries():
-    cur = g.db.execute(
-        '''
-        SELECT id, description, author, price, paid, timestamp
-        FROM entries
-        ORDER BY id ASC
-        '''
-    )
-    entries = [
-        dict(
-            pid=row[0], description=row[1], author=row[2],
-            price=row[3], paid=row[4],
-            timestamp=row[5],
-        )
-        for row in cur.fetchall()
-    ]
-
+    entries = list(Order.select().dicts())
     for e in entries:
         e['price'] = cents_to_euros(e['price'])
-
+        e['timestamp'] = e['timestamp'].timestamp()
     return json.dumps(entries)
 
 
 @bp.route('/edit/<int:pid>/<action>', methods=['POST'])
 def edit_entry(pid, action):
     if action == 'toggle_paid':
-        cur = g.db.execute('SELECT paid from entries WHERE id=?', [pid])
-        paid = cur.fetchone()[0]
-        g.db.execute('UPDATE entries SET paid=? WHERE id=?', [not paid, pid])
+        order = Order.get(id=pid)
+        order.paid = not order.paid
+        order.save()
     if action == 'delete':
-        g.db.execute('DELETE FROM entries WHERE id=?', [pid])
-    g.db.commit()
+        Order.delete().where(Order.id == pid).execute()
     update_clients()
     return json.dumps({'status': 'success'})
 
@@ -94,14 +70,13 @@ def edit_entry(pid, action):
 @bp.route('/add', methods=['POST'])
 def add_entry():
     data = request.form.to_dict()
-    description = data['description']
-    author = data['author']
-    price = re.findall('(\d+)(?:[,.](\d))?\s*(?:€|E)?', data['price'])
-    timestamp = int(datetime.utcnow().timestamp())
 
-    if not description:
+    price = re.findall('(\d+)(?:[,.](\d))?\s*(?:€|E)?', data['price'])
+    timestamp = datetime.utcnow()
+
+    if not data['description']:
         return jsonify(msg='Please provide a description', type='error')
-    elif not author:
+    elif not data['author']:
         return jsonify(msg='Please provide your name', type='error')
     elif not price:
         return jsonify(msg='Price must be formed like this: 3.14', type='error')
@@ -113,18 +88,54 @@ def add_entry():
                 price += int(value[1]) * 10
             else:
                 price += int(value[1])
-        g.db.execute(
-            '''
-            INSERT INTO entries
-            (description, author, price, paid, timestamp)
-            VALUES (?, ?, ?, ?, ?)
-            ''',
-            [description, author, price, False, timestamp]
+
+        Order.create(
+            author=data['author'],
+            description=data['description'],
+            price=price,
+            timestamp=timestamp,
+            paid=False,
         )
-        g.db.commit()
         update_clients()
 
     return jsonify(msg='New entry added', type='success')
+
+
+@bp.route('/addPlace', methods=['POST'])
+def add_place():
+    data = request.form.to_dict()
+
+    if not data['name']:
+        return jsonify(msg='Please provide a name', type='error')
+    elif not data['url']:
+        return jsonify(msg='Please provide an url', type='error')
+    else:
+        PizzaPlace.create(
+            name=data['name'],
+            url=data['url'],
+        )
+        update_clients()
+
+    return jsonify(msg='New entry added', type='success')
+
+
+@bp.route('/get/places')
+def get_places():
+    places = list(PizzaPlace.select().dicts())
+    return json.dumps(places)
+
+
+@bp.route('/selectPlace/<place_id>', methods=['POST'])
+def select_place(place_id):
+    PizzaPlace.update(active=False).execute()
+
+    place = PizzaPlace.get(id=place_id)
+    place.active = True
+    place.save()
+
+    update_clients()
+
+    return jsonify(msg='New place selected', type='success')
 
 
 def update_clients():
@@ -136,8 +147,9 @@ def update_clients():
 def get_order():
     name = request.args.get('name', 'Hans')
     phone = request.args.get('phone', '1234')
-    csr = g.db.execute('SELECT description, price FROM entries ORDER BY id ASC')
-    orders = [Order(description, price) for description, price in csr.fetchall()]
+
+    orders = Order.select(Order.description, Order.price).dicts().get()
+
     tmp = print_order(orders, name, phone)
     return send_file(tmp.name)
 
@@ -158,6 +170,6 @@ app.config['DEBUG'] = os.environ.get('PIZZA_DEBUG') == 'True'
 
 
 if __name__ == '__main__':
-    if not os.path.isfile(app.config['DATABASE']):
-        init_db()
+    database.init(app.config['DATABASE'])
+    create_tables()
     socketio.run(app, host=host, port=port)

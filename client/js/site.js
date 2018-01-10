@@ -39,7 +39,7 @@ var Orders = React.createClass({
 
   _deletAll() {
     return this.state.orders.map(function(order) {
-      return $.post(root + "edit/" + order.pid + "/delete");
+      return $.post(root + "edit/" + order.id + "/delete");
     });
   },
 
@@ -50,7 +50,7 @@ var Orders = React.createClass({
 
   togglePaid(i) {
     var id, orders;
-    id = this.state.orders[i].pid;
+    id = this.state.orders[i].id;
     orders = this.state.orders;
     orders[i].paid = !orders[i].paid;
     this.setState({
@@ -61,7 +61,7 @@ var Orders = React.createClass({
 
   deleteOrder(i) {
     var id, neworders;
-    id = this.state.orders[i].pid;
+    id = this.state.orders[i].id;
     $.post(root + "edit/" + id + "/delete");
     neworders = update(this.state.orders, {
       $splice: [[i, 1]]
@@ -88,7 +88,7 @@ var Orders = React.createClass({
             "timestamp": order.timestamp,
             "togglePaid": _this.togglePaid.bind(_this, i),
             "deleteOrder": _this.deleteOrder.bind(_this, i),
-            "key": order.pid
+            "key": order.id
           });
         };
       })(this));

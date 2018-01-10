@@ -13,8 +13,6 @@ host = '0.0.0.0'
 port = 5000
 basepath = os.environ.get('PIZZA_BASEPATH')
 
-# Order = namedtuple('Order', ['description', 'price'])
-
 bp = Blueprint('pizza', __name__, static_url_path='', static_folder='../client')
 socket_address = 'socket.io' if not basepath else basepath.strip('/') + '/socket.io'
 
@@ -148,7 +146,7 @@ def get_order():
     name = request.args.get('name', 'Hans')
     phone = request.args.get('phone', '1234')
 
-    orders = Order.select(Order.description, Order.price).dicts().get()
+    orders = list(Order.select(Order.description, Order.price).dicts())
 
     tmp = print_order(orders, name, phone)
     return send_file(tmp.name)

@@ -15,7 +15,7 @@ env.filters['cents2euros'] = cents2euros
 def print_order(orders, name, phone):
     template = env.get_template('template.md')
 
-    total = sum(order.price for order in orders)
+    total = sum(order['price'] for order in orders)
     md = template.render(name=name, phone=phone, orders=orders, total=total)
     html = markdown.markdown(md, extensions=['markdown.extensions.tables'])
     document = HTML(string=html)

@@ -269,12 +269,15 @@ var AdminPanel = React.createClass({
   },
   componentDidMount() {
     this.getPlaces();
-    this.updateSelected();
   },
   updateSelected() {
+    console.log("")
+    console.log(this.state.places.filter(this.getActive));
     this.setState({selected: this.state.places.filter(this.getActive)[0].id});
   },
   getActive(place, i) {
+    console.log("get active");
+    console.log(place);
     return place.active == true;
   },
   error(msg) {
@@ -321,7 +324,9 @@ var AdminPanel = React.createClass({
   },
   _updatePlaces(data) {
     this.setState({places: data});
+    this.updateSelected();
     console.log(this.state.places);
+    console.log(this.state.selected);
   },
   createPlaceElement(place, i) {
     return React.createElement(
@@ -330,80 +335,77 @@ var AdminPanel = React.createClass({
   },
   render: function() {
     return React.createElement(
-      "div", { "className": "col-sm-8" },
+      "div", {"className": "panel panel-default"},
       React.createElement(
-        "div", {"className": "panel panel-default"},
+        "div", {"className": "panel-heading"},
         React.createElement(
-          "div", {"className": "panel-heading"},
-          React.createElement(
-            "h3", {"className": "panel-title"},
-            "Admin"
-          )
-        ),
+          "h3", {"className": "panel-title"},
+          "Admin"
+        )
+      ),
+      React.createElement(
+        "div", {"className": "panel-body"},
         React.createElement(
-          "div", {"className": "panel-body"},
+          "div", {"className": "row"},
           React.createElement(
-            "div", {"className": "row"},
+            "div", {"className": "col-sm-4"},
             React.createElement(
-              "div", {"className": "col-sm-4"},
-              React.createElement(
-                "input",
-                {
-                  "type": "text",
-                  "className": "form-control",
-                  "ref": "name",
-                  "placeholder": "Name"
-                }
-              ),
-              React.createElement(
-                "input",
-                {
-                  "type": "text",
-                  "className": "form-control",
-                  "ref": "phone",
-                  "placeholder": "Telefonnummer"
-                }
-              ),
-              React.createElement(
-                "a", {"onClick": this.printOrders, "className": "btn btn-primary"},
-                "Bestellung herunterladen"
-              )
+              "input",
+              {
+                "type": "text",
+                "className": "form-control",
+                "ref": "name",
+                "placeholder": "Name"
+              }
             ),
             React.createElement(
-              "div", {className: "col-sm-4"},
-              React.createElement(
-                "select", {"value": this.state.selected, "className": "form-control", ref: "place", "onChange": this.selectPlace},
-                this.state.places.map(this.createPlaceElement)
-              ),
-              React.createElement(
-                  "a", {"onClick": this.deleteAll, "className": "btn btn-primary"},
-                  "Bestellungen löschen"
-              )
+              "input",
+              {
+                "type": "text",
+                "className": "form-control",
+                "ref": "phone",
+                "placeholder": "Telefonnummer"
+              }
             ),
             React.createElement(
-              "div", {"className": "col-sm-4"},
-              React.createElement(
-                "input",
-                {
-                  "type": "text",
-                  "className": "form-control",
-                  "ref": "name",
-                  "placeholder": "Name"
-                }
-              ),
-              React.createElement(
-                "input",
-                {
-                  "type": "text",
-                  "className": "form-control",
-                  "ref": "url",
-                  "placeholder": "url"
-                }
-              ),
-              React.createElement(
-                "a", {"onClick": this.addPlace, "className": "btn btn-primary"},
-                "Neue Pizzeria hinzufügen"
-              )
+              "a", {"onClick": this.printOrders, "className": "btn btn-primary"},
+              "Bestellung herunterladen"
+            )
+          ),
+          React.createElement(
+            "div", {className: "col-sm-4"},
+            React.createElement(
+              "select", {"value": this.state.selected, "className": "form-control", ref: "place", "onChange": this.selectPlace},
+              this.state.places.map(this.createPlaceElement)
+            ),
+            React.createElement(
+                "a", {"onClick": this.deleteAll, "className": "btn btn-primary"},
+                "Bestellungen löschen"
+            )
+          ),
+          React.createElement(
+            "div", {"className": "col-sm-4"},
+            React.createElement(
+              "input",
+              {
+                "type": "text",
+                "className": "form-control",
+                "ref": "name",
+                "placeholder": "Name"
+              }
+            ),
+            React.createElement(
+              "input",
+              {
+                "type": "text",
+                "className": "form-control",
+                "ref": "url",
+                "placeholder": "url"
+              }
+            ),
+            React.createElement(
+              "a", {"onClick": this.addPlace, "className": "btn btn-primary"},
+              "Neue Pizzeria hinzufügen"
             )
           )
         )

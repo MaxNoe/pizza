@@ -123,13 +123,15 @@ def get_places():
     return json.dumps(places)
 
 
-@bp.route('/selectPlace/<place_id>', methods=['POST'])
+@bp.route('/selectPlace/<int:place_id>', methods=['POST'])
 def select_place(place_id):
-    PizzaPlace.update(active=False).execute()
-
-    place = PizzaPlace.get(id=place_id)
-    place.active = True
-    place.save()
+    try:
+        place = PizzaPlace.get(id=place_id)
+        PizzaPlace.update(active=False).execute()
+        place.active = True
+        place.save()
+    except PizzaPlace.DoesNotExist:
+        return jsonify(msg='Place does not exist', type='error')
 
     update_clients()
 

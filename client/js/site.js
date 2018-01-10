@@ -264,18 +264,69 @@ var AdminPanel = React.createClass({
   deleteAll() {
     return events.emit('deleteAll');
   },
+  getInitialState: function() {
+    return {places: []};
+  },
+  componentDidMount() {
+    this.getPlaces();
+    this.updateSelected();
+  },
+  updateSelected() {
+    this.setState({selected: this.state.places.filter(this.getActive)[0].id});
+  },
+  getActive(place, i) {
+    return place.active == true;
+  },
+  error(msg) {
+      div = $('<div>', {"class": 'alert alert-danger alert-dismissable'});
+      div.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>');
+      div.append($('<strong>').text('Failure! '));
+      div.append(msg);
+      return $('#orders-panel').before(div);
+  },
+  success() {
+      div = $('<div>', {"class": 'alert alert-success alert-dismissable'});
+      div.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>');
+      div.append($('<strong>').text('Success!'));
+      return $('#orders-panel').before(div);
+  },
   printOrders(event) {
     var name = this.refs.name.getDOMNode().value;
     var phone = this.refs.phone.getDOMNode().value;
     if (!name || !phone) {
-      div = $('<div>', {"class": 'alert alert-danger alert-dismissable'});
-      div.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>');
-      div.append($('<strong>').text('Failure! '));
-      div.append("You need to provide your name and phone number");
-      return $('#orders-panel').before(div);
+      return this.error("You need to provide your name and phone number");
     } else {
       window.location = "order.pdf?" + $.param({name: name, phone: phone});
     }
+  },
+  addPlace(event) {
+    var name = this.refs.name.getDOMNode().value;
+    var url = this.refs.url.getDOMNode().value;
+    if (!name || !url) {
+      return this.error("You need to provide name and url");
+    } else {
+      $.post(root + 'addPlace', {name: name, url: url});
+      this.success();
+    }
+    this.getPlaces();
+  },
+  selectPlace(event) {
+    console.log("Select Place");
+    var id = this.refs.place.getDOMNode().value;
+    $.post(root + 'selectPlace/' + id);
+    return this.success();
+  },
+  getPlaces() {
+    $.getJSON(root + 'get/places', this._updatePlaces)
+  },
+  _updatePlaces(data) {
+    this.setState({places: data});
+    console.log(this.state.places);
+  },
+  createPlaceElement(place, i) {
+    return React.createElement(
+      "option", {value: place.id}, place.name
+    );
   },
   render: function() {
     return React.createElement(
@@ -294,7 +345,7 @@ var AdminPanel = React.createClass({
           React.createElement(
             "div", {"className": "row"},
             React.createElement(
-              "div", {"className": "col-sm-6"},
+              "div", {"className": "col-sm-4"},
               React.createElement(
                 "input",
                 {
@@ -319,10 +370,39 @@ var AdminPanel = React.createClass({
               )
             ),
             React.createElement(
-              "div", {className: "col-sm-6"},
+              "div", {className: "col-sm-4"},
               React.createElement(
-                "a", {"onClick": this.deleteAll, "className": "btn btn-primary"},
-                "Bestellungen löschen"
+                "select", {"value": this.state.selected, "className": "form-control", ref: "place", "onChange": this.selectPlace},
+                this.state.places.map(this.createPlaceElement)
+              ),
+              React.createElement(
+                  "a", {"onClick": this.deleteAll, "className": "btn btn-primary"},
+                  "Bestellungen löschen"
+              )
+            ),
+            React.createElement(
+              "div", {"className": "col-sm-4"},
+              React.createElement(
+                "input",
+                {
+                  "type": "text",
+                  "className": "form-control",
+                  "ref": "name",
+                  "placeholder": "Name"
+                }
+              ),
+              React.createElement(
+                "input",
+                {
+                  "type": "text",
+                  "className": "form-control",
+                  "ref": "url",
+                  "placeholder": "url"
+                }
+              ),
+              React.createElement(
+                "a", {"onClick": this.addPlace, "className": "btn btn-primary"},
+                "Neue Pizzeria hinzufügen"
               )
             )
           )
